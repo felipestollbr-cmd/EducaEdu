@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Educa7 AI — Estudos gamificados com IA</title>
+    <meta name="description" content="Protótipo Educa7 AI: dever de casa, IA explicadora, rotina de estudos e painel dos pais." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-cloud c1"></div>
+    <div class="bg-cloud c2"></div>
+    <div class="bg-dots"></div>
+
+    <section id="loginScreen" class="login-screen">
+      <div class="login-card">
+        <div class="brand-lockup">
+          <div class="logo">7</div>
+          <div>
+            <strong>Educa7 AI</strong>
+            <span>Login seguro por perfil</span>
+          </div>
+        </div>
+
+        <p class="kicker">Acesso protegido</p>
+        <h1>Entrar na plataforma</h1>
+        <p class="login-copy">
+          No MVP o login é demonstrativo. Futuramente, esta camada pode ser conectada ao AWS Cognito,
+          banco de usuários e permissões reais.
+        </p>
+
+        <form id="loginForm" class="login-form">
+          <label>
+            Perfil
+            <select id="loginRole">
+              <option value="student">Aluno</option>
+              <option value="parent">Pais</option>
+              <option value="teacher">Professor</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </label>
+          <label>
+            Usuário ou e-mail
+            <input id="loginUser" type="text" autocomplete="username" placeholder="sofia@educa7.ai" required />
+          </label>
+          <label>
+            Senha
+            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha" required />
+          </label>
+          <button class="big-action" type="submit">Entrar</button>
+        </form>
+
+        <div id="loginError" class="login-error" role="alert"></div>
+
+        <div class="demo-users">
+          <button data-demo-role="student" type="button"><b>Aluno</b><span>sofia@educa7.ai / aluno123</span></button>
+          <button data-demo-role="parent" type="button"><b>Pais</b><span>pais@educa7.ai / pais123</span></button>
+          <button data-demo-role="teacher" type="button"><b>Professor</b><span>prof@educa7.ai / prof123</span></button>
+          <button data-demo-role="admin" type="button"><b>Admin</b><span>admin@educa7.ai / admin123</span></button>
+        </div>
+      </div>
+    </section>
+
+    <main id="appProduct" class="product locked">
+      <section class="story-panel">
+        <div class="brand-lockup">
+          <div class="logo">7</div>
+          <div>
+            <strong>Educa7 AI</strong>
+            <span>O dever de casa virou aventura</span>
+          </div>
+        </div>
+
+        <div class="headline-card">
+          <p class="kicker">Inspirado no app de estudos com IA</p>
+          <h1>Um tutor gamificado para estudar todo dia, não só fazer tarefa.</h1>
+          <p>
+            A criança envia o dever, a IA explica, cria treino e os pais acompanham tudo com clareza.
+          </p>
+        </div>
+
+        <div class="journey-map" aria-label="Jornada de estudos">
+          <div class="path-line"></div>
+          <button class="map-node done" data-view="homework">
+            <span>1</span>
+            Enviar dever
+          </button>
+          <button class="map-node active" data-view="study">
+            <span>2</span>
+            Revisar frações
+          </button>
+          <button class="map-node" data-view="dashboard">
+            <span>3</span>
+            Ganhar XP
+          </button>
+          <button class="map-node parent" data-view="parents">
+            <span>4</span>
+            Pais acompanham
+          </button>
+        </div>
+
+        <div class="role-summary">
+          <div>
+            <strong>Aluno</strong>
+            <span>estuda, envia deveres e ganha XP</span>
+          </div>
+          <div>
+            <strong>Pais</strong>
+            <span>acompanham evolução e dificuldades</span>
+          </div>
+          <div>
+            <strong>Professor</strong>
+            <span>cria atividades e acompanha turmas</span>
+          </div>
+          <div>
+            <strong>Admin</strong>
+            <span>gerencia usuários, segurança e plataforma</span>
+          </div>
+        </div>
+
+        <div class="mini-proof">
+          <div><strong>6 dias</strong><span>sequência</span></div>
+          <div><strong>82%</strong><span>acertos</span></div>
+          <div><strong>+35 XP</strong><span>último dever</span></div>
+        </div>
+      </section>
+
+      <section class="phone-stage" aria-label="Aplicativo Educa7 AI">
+        <div class="phone">
+          <header class="phone-top">
+            <button class="ghost" id="themeToggle" type="button">Tema</button>
+            <div class="student-chip">
+              <span>S</span>
+              <div>
+                <strong id="sessionName">Sofia</strong>
+                <small id="sessionRole">7º ano • Aprendiz</small>
+              </div>
+            </div>
+            <button class="coin-pill" type="button"><span id="coins">320</span> 🪙</button>
+          </header>
+
+          <div class="role-switch" aria-label="Selecionar perfil">
+            <button class="active" data-role="student" type="button">Aluno</button>
+            <button data-role="parent" type="button">Pais</button>
+            <button data-role="teacher" type="button">Professor</button>
+            <button data-role="admin" type="button">Admin</button>
+          </div>
+
+          <div class="screen">
+            <section id="view-home" class="view active">
+              <div class="welcome-bubble">
+                <div class="tutor-face">
+                  <span></span>
+                </div>
+                <div>
+                  <p class="kicker">Tutor Educa7</p>
+                  <h2>Hoje vamos vencer frações.</h2>
+                  <p>Separei uma missão curta porque a prova de Matemática está chegando.</p>
+                </div>
+              </div>
+
+              <div class="xp-card">
+                <div>
+                  <small>Nível atual</small>
+                  <strong>Aprendiz</strong>
+                </div>
+                <div class="xp-bar"><span id="xpBar"></span></div>
+                <p><b id="xp">1240</b> XP • faltam 260 para Explorador</p>
+              </div>
+
+              <div class="mission-card hot">
+                <div class="mission-icon">📸</div>
+                <div>
+                  <small>Missão principal</small>
+                  <h3>Enviar foto do dever</h3>
+                  <p>A IA corrige, explica e avisa os pais.</p>
+                </div>
+                <button data-view="homework" type="button">Começar</button>
+              </div>
+
+              <div class="tile-grid">
+                <button class="tile" data-view="study" type="button"><span>🎯</span><b>Estudar hoje</b><small>30 min</small></button>
+                <button class="tile" data-view="quiz" type="button"><span>⚡</span><b>Quiz rápido</b><small>+20 XP</small></button>
+                <button class="tile" data-view="school" type="button"><span>🏫</span><b>Escola</b><small>agenda e boletim</small></button>
+                <button class="tile" data-view="week" type="button"><span>🗓️</span><b>Semana</b><small>simulação completa</small></button>
+                <button class="tile" data-view="calendar" type="button"><span>📅</span><b>Calendário</b><small>rotina de estudos</small></button>
+                <button class="tile" data-view="library" type="button"><span>🗂️</span><b>Biblioteca</b><small>slides e pacotes</small></button>
+                <button class="tile" data-view="dashboard" type="button"><span>📈</span><b>Progresso</b><small>6 matérias</small></button>
+                <button class="tile" data-view="contest" type="button"><span>📚</span><b>Concurso</b><small>DATAPREV</small></button>
+                <button class="tile" data-view="parents" type="button"><span>👨‍👩‍👧</span><b>Pais</b><small>relatório</small></button>
+                <button class="tile" data-view="teacher" type="button"><span>🧑‍🏫</span><b>Professor</b><small>turma</small></button>
+                <button class="tile" data-view="admin" type="button"><span>🛡️</span><b>Admin</b><small>sistema</small></button>
+              </div>
+            </section>
+
+            <section id="view-week" class="view">
+              <div class="screen-title">
+                <p class="kicker">Semana da Sofia</p>
+                <h2>Da aula lançada ao acompanhamento dos pais.</h2>
+              </div>
+
+              <div class="week-score">
+                <div>
+                  <strong>5</strong>
+                  <span>dias estudados</span>
+                </div>
+                <div>
+                  <strong>87%</strong>
+                  <span>tarefas feitas</span>
+                </div>
+                <div>
+                  <strong>+210</strong>
+                  <span>XP na semana</span>
+                </div>
+              </div>
+
+              <div class="week-legend">
+                <span class="teacher-dot">Professor</span>
+                <span class="student-dot">Aluno</span>
+                <span class="parent-dot">Pais</span>
+              </div>
+
+              <div id="weekTimeline" class="week-timeline"></div>
+
+              <div class="week-insight">
+                <p class="kicker">Resumo inteligente</p>
+                <p>
+                  A Sofia manteve boa rotina. Matemática continua sendo o ponto de atenção,
+                  enquanto Português e Ciências mostram evolução. Para a próxima semana, o Tutor
+                  recomenda revisão curta de frações em dias alternados.
+                </p>
+              </div>
+            </section>
+
+            <section id="view-library" class="view">
+              <div class="screen-title">
+                <p class="kicker">Biblioteca de conteúdos</p>
+                <h2>Slides, PDFs e pacotes viram trilhas.</h2>
+              </div>
+
+              <div class="library-toolbar">
+                <select id="libraryFilter" aria-label="Filtrar biblioteca">
+                  <option value="all">Todos</option>
+                  <option value="school">Escolar</option>
+                  <option value="contest">Concurso</option>
+                  <option value="review">Revisão</option>
+                </select>
+                <button id="librarySampleBtn" type="button">Exemplo</button>
+                <button id="libraryImportBtn" type="button">Importar JSON</button>
+              </div>
+
+              <div class="library-summary">
+                <div>
+                  <small>Pacotes visíveis</small>
+                  <strong id="libraryCount">0 pacotes</strong>
+                </div>
+                <div>
+                  <small>Formato ideal</small>
+                  <strong>JSON + slides</strong>
+                </div>
+              </div>
+
+              <div class="library-guide">
+                <p class="kicker">Modelo de pacote</p>
+                <code>{ "nome": "DATAPREV", "modulos": [], "questoes": [] }</code>
+              </div>
+
+              <label class="library-json">
+                <span>Colar pacote JSON</span>
+                <textarea id="libraryJsonInput" rows="7" spellcheck="false" placeholder='{"nome":"DATAPREV","tipo":"concurso","modulos":[{"nome":"LGPD","licoes":["Resumo","Questões"]}]}'></textarea>
+              </label>
+
+              <div id="libraryItems" class="library-list"></div>
+            </section>
+
+            <section id="view-calendar" class="view">
+              <div class="screen-title">
+                <p class="kicker">Calendário inteligente</p>
+                <h2>Casa, escola e concurso na mesma rotina.</h2>
+              </div>
+
+              <div class="calendar-summary">
+                <div>
+                  <small>Blocos concluídos</small>
+                  <strong id="calendarProgress">0/0</strong>
+                </div>
+                <div>
+                  <small>Ritmo sugerido</small>
+                  <strong>30 min/dia</strong>
+                </div>
+              </div>
+
+              <div class="calendar-focus">
+                <p class="kicker">Próxima melhor ação</p>
+                <h3>Faça primeiro o bloco mais curto.</h3>
+                <p>O sistema mistura tarefa escolar, revisão espaçada e DATAPREV sem deixar o dia pesado.</p>
+              </div>
+
+              <div id="calendarItems" class="calendar-list"></div>
+            </section>
+
+            <section id="view-school" class="view">
+              <div class="screen-title">
+                <p class="kicker">Módulo Escola</p>
+                <h2>Agenda, matérias lecionadas e boletins.</h2>
+              </div>
+
+              <div class="school-tabs" role="tablist" aria-label="Módulo escolar">
+                <button class="active" data-school-tab="agenda" type="button">Agenda</button>
+                <button data-school-tab="lessons" type="button">Matérias</button>
+                <button data-school-tab="grades" type="button">Boletim</button>
+              </div>
+
+              <div id="school-agenda" class="school-panel active">
+                <div class="teacher-only school-form">
+                  <input id="agendaDate" type="date" />
+                  <input id="agendaSubject" type="text" placeholder="Matéria" />
+                  <input id="agendaTitle" type="text" placeholder="Prova, dever ou trabalho" />
+                  <button id="addAgendaItem" type="button">Lançar</button>
+                </div>
+                <div id="agendaItems" class="school-list"></div>
+              </div>
+
+              <div id="school-lessons" class="school-panel">
+                <div class="teacher-only school-form">
+                  <input id="lessonSubject" type="text" placeholder="Matéria lecionada" />
+                  <input id="lessonTopic" type="text" placeholder="Conteúdo da aula" />
+                  <input id="lessonHomework" type="text" placeholder="Dever de casa" />
+                  <button id="addLessonItem" type="button">Registrar aula</button>
+                </div>
+                <div id="lessonItems" class="school-list"></div>
+              </div>
+
+              <div id="school-grades" class="school-panel">
+                <div class="teacher-only school-form">
+                  <input id="gradeSubject" type="text" placeholder="Matéria" />
+                  <input id="gradeType" type="text" placeholder="Avaliação" />
+                  <input id="gradeValue" type="number" min="0" max="10" step="0.1" placeholder="Nota" />
+                  <button id="addGradeItem" type="button">Lançar nota</button>
+                </div>
+                <div id="gradeItems" class="grade-book"></div>
+              </div>
+            </section>
+
+            <section id="view-homework" class="view">
+              <div class="screen-title">
+                <p class="kicker">Dever de casa</p>
+                <h2>Fotografe. A IA transforma em estudo.</h2>
+              </div>
+
+              <label class="camera-card">
+                <input id="homeworkFile" type="file" accept="image/*,.pdf" />
+                <div class="camera-lens"></div>
+                <strong id="fileLabel">Enviar foto ou PDF</strong>
+                <span>caderno, prova, apostila ou lista</span>
+              </label>
+
+              <div class="subject-row" aria-label="Escolher matéria">
+                <button class="subject-pill active" type="button" data-subject="">Auto</button>
+                <button class="subject-pill" type="button" data-subject="Matemática">Mat</button>
+                <button class="subject-pill" type="button" data-subject="Português">Port</button>
+                <button class="subject-pill" type="button" data-subject="Ciências">Ciên</button>
+              </div>
+
+              <button id="analyzeBtn" class="big-action" type="button">Analisar com Tutor Educa7</button>
+              <div id="analysisBox" class="analysis-box">
+                <p>O resultado aparecerá aqui com status do dever, acertos, erros e recomendação para os pais.</p>
+              </div>
+            </section>
+
+            <section id="view-study" class="view">
+              <div class="screen-title">
+                <p class="kicker">Estudar hoje</p>
+                <h2>Plano leve, visual e diário.</h2>
+              </div>
+
+              <div class="timer-card">
+                <div class="timer-ring"><strong id="timer">15</strong><small>min</small></div>
+                <div>
+                  <h3>Modo foco</h3>
+                  <p>Sem cobrança. Só uma etapa de cada vez.</p>
+                  <button id="focusBtn" type="button">Iniciar foco</button>
+                </div>
+              </div>
+
+              <div class="study-list">
+                <article><span>1</span><div><b>Resumo-relâmpago</b><small>Frações com exemplos de pizza.</small></div></article>
+                <article><span>2</span><div><b>Flashcards</b><small>Numerador, denominador e equivalência.</small></div></article>
+                <article><span>3</span><div><b>Treino parecido</b><small>5 exercícios no mesmo estilo do dever.</small></div></article>
+                <article><span>4</span><div><b>Mini quiz final</b><small>Feedback imediato e XP.</small></div></article>
+              </div>
+            </section>
+
+            <section id="view-contest" class="view">
+              <div class="screen-title">
+                <p class="kicker">Trilha pessoal</p>
+                <h2>DATAPREV sem bagunçar o estudo escolar.</h2>
+              </div>
+
+              <div class="contest-hero">
+                <div>
+                  <small>Meta da semana</small>
+                  <strong>5 blocos curtos + 1 simulado</strong>
+                  <p>Um modo adulto usando a mesma lógica de XP, calendário e revisão inteligente.</p>
+                </div>
+                <div class="contest-score">
+                  <b>67%</b>
+                  <span>pronto</span>
+                </div>
+              </div>
+
+              <div id="contestPlan" class="contest-plan"></div>
+
+              <div class="screen-title compact">
+                <p class="kicker">Mapa de edital</p>
+                <h2>Prioridade por assunto.</h2>
+              </div>
+              <div id="contestTopics" class="contest-topics"></div>
+
+              <button id="contestExamBtn" class="big-action" type="button">Gerar simulado com Gemini</button>
+              <div id="contestExam" class="contest-exam">
+                <p>O simulado aparecerá aqui com item certo/errado, gabarito e explicação curta.</p>
+              </div>
+            </section>
+
+            <section id="view-quiz" class="view">
+              <div class="screen-title">
+                <p class="kicker">Desafio relâmpago</p>
+                <h2>Uma pergunta, feedback na hora.</h2>
+              </div>
+              <div id="quizBox" class="quiz-card">
+                <h3>Qual é o primeiro passo para somar 1/3 + 1/6?</h3>
+                <button data-correct="true" type="button">Encontrar denominador comum</button>
+                <button type="button">Somar todos os números direto</button>
+                <button type="button">Dividir por 2</button>
+              </div>
+            </section>
+
+            <section id="view-dashboard" class="view">
+              <div class="screen-title">
+                <p class="kicker">Progresso</p>
+                <h2>Mapa de aprendizagem.</h2>
+              </div>
+              <div class="mastery-card">
+                <div><strong>82%</strong><span>acertos</span></div>
+                <div><strong>12h</strong><span>no mês</span></div>
+                <div><strong>38</strong><span>exercícios</span></div>
+              </div>
+              <div id="subjectList" class="subject-list"></div>
+            </section>
+
+            <section id="view-parents" class="view">
+              <div class="screen-title">
+                <p class="kicker">Painel dos Pais</p>
+                <h2>O que estudar, onde ajudar e o que melhorou.</h2>
+              </div>
+              <div class="parent-summary">
+                <div class="status-dot ok"></div>
+                <div>
+                  <b>Estudou hoje</b>
+                  <p>Missão iniciada e último dever analisado.</p>
+                </div>
+              </div>
+              <div class="parent-summary warn">
+                <div class="status-dot"></div>
+                <div>
+                  <b>Ponto de atenção</b>
+                  <p>Frações com denominadores diferentes ainda exigem revisão.</p>
+                </div>
+              </div>
+              <button id="parentReport" class="big-action" type="button">Gerar relatório semanal</button>
+              <div id="reportBox" class="report-box">
+                Recomenda-se 15 minutos por dia com exemplos práticos: pizza, dinheiro e divisão de objetos.
+              </div>
+            </section>
+
+            <section id="view-teacher" class="view">
+              <div class="screen-title">
+                <p class="kicker">Perfil Professor</p>
+                <h2>Planejar, acompanhar e reforçar a turma.</h2>
+              </div>
+
+              <div class="teacher-hero">
+                <div>
+                  <b>Turma 7º ano A</b>
+                  <p>24 alunos • 6 com dificuldade recorrente em frações</p>
+                </div>
+                <button id="teacherPlan" type="button">Criar atividade</button>
+              </div>
+
+              <div class="teacher-actions">
+                <article>
+                  <span>01</span>
+                  <div>
+                    <b>Enviar lista para a turma</b>
+                    <small>PDF, foto ou exercício digitado.</small>
+                  </div>
+                </article>
+                <article>
+                  <span>02</span>
+                  <div>
+                    <b>Gerar quiz por nível</b>
+                    <small>Fácil, médio e desafio.</small>
+                  </div>
+                </article>
+                <article>
+                  <span>03</span>
+                  <div>
+                    <b>Ver mapa de dificuldades</b>
+                    <small>Assuntos que mais geram erro.</small>
+                  </div>
+                </article>
+              </div>
+
+              <div class="class-map">
+                <div><strong>72%</strong><span>domínio médio</span></div>
+                <div><strong>18</strong><span>atividades feitas</span></div>
+                <div><strong>6</strong><span>alunos em atenção</span></div>
+              </div>
+
+              <div id="teacherBox" class="report-box">
+                Sugestão da IA: criar uma lista curta com 5 questões de frações e 2 desafios com contexto do cotidiano.
+              </div>
+            </section>
+
+            <section id="view-admin" class="view">
+              <div class="screen-title">
+                <p class="kicker">Administrador</p>
+                <h2>Controle da plataforma, segurança e operação.</h2>
+              </div>
+
+              <div class="admin-grid">
+                <article>
+                  <strong>128</strong>
+                  <span>usuários</span>
+                </article>
+                <article>
+                  <strong>42</strong>
+                  <span>alunos ativos</span>
+                </article>
+                <article>
+                  <strong>9</strong>
+                  <span>professores</span>
+                </article>
+                <article>
+                  <strong>0</strong>
+                  <span>alertas críticos</span>
+                </article>
+              </div>
+
+              <div class="admin-list">
+                <article>
+                  <div>
+                    <b>Gestão de usuários</b>
+                    <small>alunos, pais, professores e permissões</small>
+                  </div>
+                  <button type="button">Abrir</button>
+                </article>
+                <article>
+                  <div>
+                    <b>Biblioteca e materiais</b>
+                    <small>documentos, fontes RAG e conteúdos escolares</small>
+                  </div>
+                  <button type="button">Revisar</button>
+                </article>
+                <article>
+                  <div>
+                    <b>Segurança infantil</b>
+                    <small>moderação, privacidade e bloqueios</small>
+                  </div>
+                  <button type="button">Ver regras</button>
+                </article>
+                <article>
+                  <div>
+                    <b>Métricas do sistema</b>
+                    <small>uso, IA, uploads e desempenho</small>
+                  </div>
+                  <button type="button">Analytics</button>
+                </article>
+              </div>
+
+              <button id="adminAudit" class="big-action" type="button">Rodar auditoria de segurança</button>
+              <div id="adminBox" class="report-box">
+                Status: políticas de privacidade, linguagem segura e controle de acesso preparados para expansão multiusuário.
+              </div>
+            </section>
+          </div>
+
+          <nav class="bottom-nav" aria-label="Navegação do app">
+            <button class="active" data-view="home" type="button">🏠<span>Início</span></button>
+            <button data-view="homework" type="button">📸<span>Dever</span></button>
+            <button data-view="study" type="button">🎯<span>Estudo</span></button>
+            <button data-view="contest" type="button">📚<span>Edital</span></button>
+            <button data-view="calendar" type="button">📅<span>Agenda</span></button>
+            <button data-view="library" type="button">🗂️<span>Conteúdo</span></button>
+            <button data-view="school" type="button">🏫<span>Escola</span></button>
+            <button data-view="week" type="button">🗓️<span>Semana</span></button>
+            <button data-view="dashboard" type="button">📈<span>Mapa</span></button>
+            <button data-view="parents" type="button">👪<span>Pais</span></button>
+            <button data-view="teacher" type="button">🧑‍🏫<span>Prof.</span></button>
+            <button data-view="admin" type="button">🛡️<span>Admin</span></button>
+          </nav>
+        </div>
+      </section>
+
+      <aside class="parent-panel">
+        <div class="panel-card">
+          <p class="kicker">Perfis conectados</p>
+          <h2>Casa + escola</h2>
+          <div class="parent-metrics">
+            <div><span>Aluno</span><strong>rotina</strong></div>
+            <div><span>Pais</span><strong>controle</strong></div>
+            <div><span>Professor</span><strong>turma</strong></div>
+            <div><span>Admin</span><strong>sistema</strong></div>
+          </div>
+        </div>
+
+        <div class="panel-card note">
+          <p class="kicker">Insight da IA</p>
+          <p>
+            A Sofia está consistente, mas precisa de exemplos concretos para denominadores diferentes.
+            O ideal é revisar pouco, todos os dias.
+          </p>
+        </div>
+
+        <div class="panel-card">
+          <p class="kicker">Próximas provas</p>
+          <ul class="agenda">
+            <li><b>Matemática</b><span>Frações • 25/07</span></li>
+            <li><b>Ciências</b><span>Sistema Solar • 28/07</span></li>
+            <li><b>Português</b><span>Interpretação • 30/07</span></li>
+          </ul>
+        </div>
+      </aside>
+
+      <button id="logoutBtn" class="logout-button" type="button">Sair</button>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
