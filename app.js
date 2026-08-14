@@ -1,6 +1,9 @@
+const STUDENT_NAME = "Sofia";
+
 const student = {
   xp: 1240,
-  coins: 320
+  coins: 320,
+  streak: 6
 };
 
 const demoUsers = {
@@ -201,6 +204,8 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 let selectedHomeworkFile = null;
 let selectedSubject = "";
 let backendAvailable = false;
+let dailyStudyCache = [];
+const dailyStudyDone = new Set();
 
 async function api(path, options = {}) {
   const response = await fetch(`/api${path}`, options);
@@ -209,6 +214,40 @@ async function api(path, options = {}) {
     throw new Error(body.error || `Falha na requisição: ${response.status}`);
   }
   return response.json();
+}
+
+async function loadProgress() {
+  try {
+    const progress = await api(`/progress?student=${encodeURIComponent(STUDENT_NAME)}`);
+    student.xp = progress.xp;
+    student.coins = progress.coins;
+    student.streak = progress.streak;
+    updateStats();
+  } catch {
+    // mantém os valores padrão em memória se o backend não responder
+  }
+}
+
+function awardProgress(xp = 0, coins = 0) {
+  student.xp += xp;
+  student.coins += coins;
+  updateStats();
+
+  api("/progress/award", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ student: STUDENT_NAME, xp, coins })
+  })
+    .then((progress) => {
+      // sincroniza com o valor oficial do servidor (cobre streak e corrige qualquer desvio)
+      student.xp = progress.xp;
+      student.coins = progress.coins;
+      student.streak = progress.streak;
+      updateStats();
+    })
+    .catch(() => {
+      // sem backend: os valores otimistas já aplicados localmente permanecem
+    });
 }
 
 async function loadSchoolDataFromBackend() {
@@ -489,9 +528,7 @@ function generateContestExam() {
       <span>${question.explanation}</span>
     </div>
   `;
-  student.xp += 25;
-  student.coins += 8;
-  updateStats();
+  awardProgress(25, 8);
   toast("Simulado gerado. +25 XP e +8 moedas.");
 }
 
@@ -511,7 +548,7 @@ async function analyzeHomework() {
     if (!selectedHomeworkFile) throw new Error("no-file");
     const formData = new FormData();
     formData.append("photo", selectedHomeworkFile);
-    formData.append("student", currentSession?.name || "Sofia");
+    formData.append("student", STUDENT_NAME);
     if (selectedSubject) formData.append("subject", selectedSubject);
     analysis = await api("/homework/analyze", { method: "POST", body: formData });
   } catch (error) {
@@ -527,9 +564,7 @@ async function analyzeHomework() {
     };
   }
 
-  student.xp += 35;
-  student.coins += 12;
-  updateStats();
+  awardProgress(35, 12);
 
   box.innerHTML = `
     <p class="kicker">Correção pronta</p>
@@ -539,7 +574,7 @@ async function analyzeHomework() {
       <div><strong>${analysis.wrong_count ?? "-"}</strong><span>erros</span></div>
       <div><strong>+35</strong><span>XP</span></div>
     </div>
-    <p><b>Para ${currentSession?.name || "o aluno"}:</b> ${analysis.explanation_student || ""}</p>
+    <p><b>Para ${STUDENT_NAME}:</b> ${analysis.explanation_student || ""}</p>
     <p><b>Para os pais:</b> ${analysis.explanation_parent || ""}</p>
     ${analysis.matchedAgenda ? `<p class="meta">Bate com a agenda: ${analysis.matchedAgenda.title}.</p>` : ""}
   `;
@@ -555,8 +590,7 @@ function answerQuiz(button) {
   if (!correct) button.classList.add("wrong");
 
   const xp = correct ? 20 : 8;
-  student.xp += xp;
-  updateStats();
+  awardProgress(xp);
 
   const feedback = document.createElement("div");
   feedback.className = "feedback";
@@ -567,8 +601,7 @@ function answerQuiz(button) {
 }
 
 function startFocus() {
-  student.xp += 15;
-  updateStats();
+  awardProgress(15);
   $("#timer").textContent = "14";
   toast("Modo foco iniciado. Uma etapa de cada vez.");
 }
@@ -690,11 +723,112 @@ function completeCalendarTask(id) {
   const item = studyCalendar.find((entry) => entry.id === Number(id));
   if (!item || item.done) return;
   item.done = true;
-  student.xp += 18;
-  student.coins += 5;
-  updateStats();
+  awardProgress(18, 5);
   renderCalendar();
   toast("Bloco concluído. +18 XP e +5 moedas.");
+}
+
+async function loadDailyStudy() {
+  try {
+    const data = await api("/study/daily");
+    dailyStudyCache = data.items || [];
+  } catch {
+    dailyStudyCache = [];
+  }
+  renderDailyStudy();
+}
+
+function renderDailyStudy() {
+  const container = $("#dailyStudyItems");
+  if (!container) return;
+
+  if (dailyStudyCache.length === 0) {
+    container.innerHTML = `<p class="meta">Nenhuma prova ou entrega futura na agenda ainda. Lance uma data em "Escola" para gerar o estudo de hoje.</p>`;
+    return;
+  }
+
+  container.innerHTML = dailyStudyCache.map((block, blockIndex) => `
+    <article class="daily-block">
+      <div class="daily-head">
+        <div>
+          <b>${block.agenda.subject} — ${block.agenda.title}</b>
+          <small>${daysUntilLabel(block.daysUntil)}</small>
+        </div>
+        <span class="days-badge">${formatDate(block.agenda.date)}</span>
+      </div>
+      <p class="daily-summary">${block.summary}</p>
+
+      <div class="flashcard-row">
+        ${(block.flashcards || []).map((card, cardIndex) => `
+          <div class="flashcard" data-flash="${blockIndex}-${cardIndex}">
+            <div class="front">${card.front}</div>
+            <div class="back">${card.back}</div>
+            <small>Toque para virar</small>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="daily-quiz">
+        ${(block.quiz || []).map((item, qIndex) => `
+          <div class="quiz-card daily-quiz-item" data-quiz-block="${blockIndex}" data-quiz-index="${qIndex}">
+            <p class="question">${item.question}</p>
+            ${item.options.map((option) => `<button type="button" data-option="${option[0]}">${option}</button>`).join("")}
+          </div>
+        `).join("")}
+      </div>
+    </article>
+  `).join("");
+}
+
+function daysUntilLabel(days) {
+  if (days <= 0) return "É hoje";
+  if (days === 1) return "Amanhã";
+  return `Em ${days} dias`;
+}
+
+function handleDailyStudyClick(event) {
+  const flashcard = event.target.closest(".flashcard");
+  if (flashcard) {
+    flashcard.classList.toggle("flipped");
+    const key = `flash-${flashcard.dataset.flash}`;
+    if (flashcard.classList.contains("flipped") && !dailyStudyDone.has(key)) {
+      dailyStudyDone.add(key);
+      awardProgress(5);
+      toast("+5 XP por revisar o flashcard.");
+    }
+    return;
+  }
+
+  const optionButton = event.target.closest("[data-option]");
+  if (!optionButton) return;
+
+  const card = optionButton.closest(".daily-quiz-item");
+  const blockIndex = Number(card.dataset.quizBlock);
+  const qIndex = Number(card.dataset.quizIndex);
+  const quizItem = dailyStudyCache[blockIndex]?.quiz?.[qIndex];
+  if (!quizItem) return;
+
+  const key = `quiz-${blockIndex}-${qIndex}`;
+  if (dailyStudyDone.has(key)) return;
+  dailyStudyDone.add(key);
+
+  const correctLetter = quizItem.correct;
+  const isCorrect = optionButton.dataset.option === correctLetter;
+
+  card.querySelectorAll("[data-option]").forEach((btn) => {
+    btn.disabled = true;
+    if (btn.dataset.option === correctLetter) btn.classList.add("correct");
+  });
+  if (!isCorrect) optionButton.classList.add("wrong");
+
+  const explanation = document.createElement("p");
+  explanation.className = "feedback";
+  explanation.textContent = quizItem.explanation || "";
+  card.appendChild(explanation);
+
+  const xp = isCorrect ? 15 : 5;
+  awardProgress(xp);
+  toast(`${isCorrect ? "Acertou!" : "Quase!"} +${xp} XP.`);
 }
 
 function setSchoolTab(tab) {
@@ -811,6 +945,7 @@ function bind() {
     const button = event.target.closest("[data-calendar-id]");
     if (button) completeCalendarTask(button.dataset.calendarId);
   });
+  $("#dailyStudyItems").addEventListener("click", handleDailyStudyClick);
   $$("[data-school-tab]").forEach((button) => {
     button.addEventListener("click", () => setSchoolTab(button.dataset.schoolTab));
   });
@@ -829,6 +964,8 @@ renderCalendar();
 updateStats();
 bind();
 loadSchoolDataFromBackend();
+loadDailyStudy();
+loadProgress();
 
 try {
   const savedSession = JSON.parse(localStorage.getItem("educa7_session"));

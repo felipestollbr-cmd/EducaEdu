@@ -45,6 +45,14 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS student_progress (
+    student TEXT PRIMARY KEY,
+    xp INTEGER NOT NULL DEFAULT 0,
+    coins INTEGER NOT NULL DEFAULT 0,
+    streak INTEGER NOT NULL DEFAULT 0,
+    last_activity_date TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS book_chunks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     book TEXT NOT NULL,
@@ -80,6 +88,12 @@ seedIfEmpty(
     ["Ciências", "Movimentos da Terra", "Mapa mental no caderno"]
   ],
   "INSERT INTO lessons (subject, topic, homework) VALUES (?, ?, ?)"
+);
+
+seedIfEmpty(
+  "student_progress",
+  [["Sofia", 1240, 320, 6, null]],
+  "INSERT INTO student_progress (student, xp, coins, streak, last_activity_date) VALUES (?, ?, ?, ?, ?)"
 );
 
 seedIfEmpty(

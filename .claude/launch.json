@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "educaedu-backend",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["backend/src/server.js"],
+      "env": { "PORT": "3500" },
+      "port": 3500
+    }
+  ]
+}

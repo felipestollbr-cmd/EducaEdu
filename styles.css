@@ -470,7 +470,7 @@ body.dark .role-switch { background: rgba(28,39,64,.60); }
 
 .xp-card, .mission-card, .tile, .camera-card, .analysis-box,
 .timer-card, .study-list article, .quiz-card, .mastery-card,
-.parent-summary, .report-box {
+.parent-summary, .report-box, .daily-block, .flashcard {
   border: 1px solid var(--line);
   border-radius: 28px;
   background: var(--solid);
@@ -697,7 +697,42 @@ body.dark .role-switch { background: rgba(28,39,64,.60); }
   color: var(--ink);
 }
 
-.mastery-card {
+.daily-study-list { display: grid; gap: 16px; margin-top: 16px; }
+
+.daily-block { padding: 18px; }
+.daily-block .daily-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.daily-block .daily-head b, .daily-block .daily-head small { display: block; }
+.daily-block .daily-head small { color: var(--muted); margin-top: 3px; }
+.daily-block .days-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(52,120,255,.12);
+  color: var(--purple);
+  font-weight: 1000;
+  font-size: .8rem;
+  white-space: nowrap;
+}
+.daily-block .daily-summary { margin: 12px 0 4px; color: var(--ink); }
+
+.flashcard-row { display: grid; gap: 10px; margin-top: 14px; }
+.flashcard {
+  padding: 16px;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.flashcard .front { font-weight: 1000; }
+.flashcard .back { display: none; margin-top: 8px; color: var(--muted); }
+.flashcard.flipped .back { display: block; }
+.flashcard.flipped { background: rgba(255,216,77,.16); }
+.flashcard small { display: block; margin-top: 8px; color: var(--muted); font-size: .75rem; }
+
+.daily-quiz { margin-top: 16px; display: grid; gap: 14px; }
+.daily-quiz-item p.question { font-weight: 1000; margin: 0 0 8px; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
