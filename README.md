@@ -1,12 +1,15 @@
 # EducaEdu
 
-MVP web responsivo da plataforma EducaEdu, uma experiência gamificada de estudos para crianças, família, escola e preparação para concursos.
+Plataforma EducaEdu: uma experiência gamificada de estudos para crianças, família, escola e
+preparação para concursos, com backend real (Gemini + RAG) e frontend instalável como PWA
+(computador, tablet e celular).
 
 ## Recursos atuais
 
 - Login demonstrativo por perfil: aluno, pais, professor e administrador.
-- Envio simulado de dever de casa com análise por IA.
-- Plano de estudos diário.
+- Envio de dever de casa com análise por IA (Gemini Vision + RAG sobre o material didático real).
+- Estudo do dia com flashcards e quiz gerados a partir da agenda escolar.
+- XP, moedas e streak persistidos no backend.
 - Calendário inteligente com blocos escolares, revisão espaçada e concurso.
 - Biblioteca de conteúdos para organizar slides, PDFs e pacotes JSON.
 - Quiz interativo.
@@ -16,8 +19,10 @@ MVP web responsivo da plataforma EducaEdu, uma experiência gamificada de estudo
 - Painel dos pais.
 - Área do professor.
 - Área administrativa.
-- Gamificação com XP e moedas.
 - Tema claro/escuro.
+- **PWA instalável e responsiva**: shell próprio (sem moldura de celular), sidebar no
+  desktop/tablet paisagem, barra inferior no celular/tablet retrato, service worker com
+  cache do app shell para abrir offline.
 
 ## Como abrir localmente
 
@@ -86,12 +91,24 @@ desenvolvimento.
 ## Próximos passos técnicos
 
 - Autenticação real (hoje o login ainda é uma lista fixa de credenciais demo).
-- Persistir XP, moedas, streaks e histórico de deveres por aluno (hoje só o dever fica salvo).
-- Vitrine no app para o `GET /api/study/daily` (a API já existe; falta puxá-la para uma tela).
 - Correlacionar automaticamente o dever enviado com o item da agenda daquele dia (comparação por matéria já existe; falta por conteúdo/tópico).
+- Conversor de material/edital em pacote JSON genérico (hoje o pacote é montado manualmente; a ideia é generalizar de DATAPREV para qualquer concurso).
 - Repetição espaçada, badges e loja de recompensas.
 - Multi-tenant (uma instância por família/escola) para virar SaaS.
-- Preparar deploy em AWS ou alternativa equivalente.
+- Preparar deploy em AWS ou alternativa equivalente (ver observações de segurança da conta AWS usada nos testes).
+
+## PWA e responsividade
+
+O app roda em três layouts, todos usando o mesmo HTML/CSS/JS (sem duplicar telas):
+
+- **Celular (<900px)**: navegação em barra inferior fixa.
+- **Tablet retrato / telas médias (900–1279px)**: navegação em sidebar fixa à esquerda.
+- **Desktop / tablet paisagem (≥1280px)**: sidebar + painel lateral direito com atalhos.
+
+Para instalar como app: abra o site pelo Chrome/Edge (desktop ou Android) e use "Instalar
+app"/"Adicionar à tela inicial". No iOS/Safari, use Compartilhar → "Adicionar à Tela de
+Início". Os ícones ficam em `icons/`, o manifesto em `manifest.json` e o service worker
+(cache do app shell para abrir offline) em `sw.js`.
 
 ## Formato inicial de pacote JSON
 

@@ -2,9 +2,17 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Educa7 AI — Estudos gamificados com IA</title>
-    <meta name="description" content="Protótipo Educa7 AI: dever de casa, IA explicadora, rotina de estudos e painel dos pais." />
+    <meta name="description" content="Educa7 AI: dever de casa, IA explicadora, rotina de estudos e painel dos pais." />
+    <meta name="theme-color" content="#3478ff" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Educa7 AI" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -13,17 +21,30 @@
     <div class="bg-dots"></div>
 
     <section id="loginScreen" class="login-screen">
-      <div class="login-card">
+      <div class="login-hero">
         <div class="brand-lockup">
           <div class="logo">7</div>
           <div>
             <strong>Educa7 AI</strong>
-            <span>Login seguro por perfil</span>
+            <span>Estudos gamificados com IA</span>
           </div>
         </div>
+        <h1>O dever de casa vira rotina de estudo, todo dia.</h1>
+        <p>
+          A criança envia o dever, a IA explica, cria treino de fixação e os pais acompanham
+          tudo com clareza — no computador, no tablet ou no celular.
+        </p>
+        <div class="role-summary">
+          <div><strong>Aluno</strong><span>estuda, envia deveres e ganha XP</span></div>
+          <div><strong>Pais</strong><span>acompanham evolução e dificuldades</span></div>
+          <div><strong>Professor</strong><span>cria atividades e acompanha turmas</span></div>
+          <div><strong>Admin</strong><span>gerencia usuários, segurança e plataforma</span></div>
+        </div>
+      </div>
 
+      <div class="login-card">
         <p class="kicker">Acesso protegido</p>
-        <h1>Entrar na plataforma</h1>
+        <h2>Entrar na plataforma</h2>
         <p class="login-copy">
           No MVP o login é demonstrativo. Futuramente, esta camada pode ser conectada ao AWS Cognito,
           banco de usuários e permissões reais.
@@ -61,91 +82,51 @@
       </div>
     </section>
 
-    <main id="appProduct" class="product locked">
-      <section class="story-panel">
-        <div class="brand-lockup">
+    <div id="appProduct" class="app-shell locked">
+      <header class="app-topbar">
+        <div class="brand-lockup compact">
           <div class="logo">7</div>
-          <div>
-            <strong>Educa7 AI</strong>
-            <span>O dever de casa virou aventura</span>
-          </div>
+          <strong>Educa7 AI</strong>
         </div>
 
-        <div class="headline-card">
-          <p class="kicker">Inspirado no app de estudos com IA</p>
-          <h1>Um tutor gamificado para estudar todo dia, não só fazer tarefa.</h1>
-          <p>
-            A criança envia o dever, a IA explica, cria treino e os pais acompanham tudo com clareza.
-          </p>
-        </div>
-
-        <div class="journey-map" aria-label="Jornada de estudos">
-          <div class="path-line"></div>
-          <button class="map-node done" data-view="homework">
-            <span>1</span>
-            Enviar dever
-          </button>
-          <button class="map-node active" data-view="study">
-            <span>2</span>
-            Revisar frações
-          </button>
-          <button class="map-node" data-view="dashboard">
-            <span>3</span>
-            Ganhar XP
-          </button>
-          <button class="map-node parent" data-view="parents">
-            <span>4</span>
-            Pais acompanham
-          </button>
-        </div>
-
-        <div class="role-summary">
-          <div>
-            <strong>Aluno</strong>
-            <span>estuda, envia deveres e ganha XP</span>
-          </div>
-          <div>
-            <strong>Pais</strong>
-            <span>acompanham evolução e dificuldades</span>
-          </div>
-          <div>
-            <strong>Professor</strong>
-            <span>cria atividades e acompanha turmas</span>
-          </div>
-          <div>
-            <strong>Admin</strong>
-            <span>gerencia usuários, segurança e plataforma</span>
-          </div>
-        </div>
-
-        <div class="mini-proof">
-          <div><strong>6 dias</strong><span>sequência</span></div>
-          <div><strong>82%</strong><span>acertos</span></div>
-          <div><strong>+35 XP</strong><span>último dever</span></div>
-        </div>
-      </section>
-
-      <section class="phone-stage" aria-label="Aplicativo Educa7 AI">
-        <div class="phone">
-          <header class="phone-top">
-            <button class="ghost" id="themeToggle" type="button">Tema</button>
-            <div class="student-chip">
-              <span>S</span>
-              <div>
-                <strong id="sessionName">Sofia</strong>
-                <small id="sessionRole">7º ano • Aprendiz</small>
-              </div>
+        <div class="topbar-actions">
+          <button class="ghost" id="themeToggle" type="button">Tema</button>
+          <button class="coin-pill" type="button"><span id="coins">320</span> 🪙</button>
+          <div class="student-chip">
+            <span>S</span>
+            <div>
+              <strong id="sessionName">Sofia</strong>
+              <small id="sessionRole">7º ano • Aprendiz</small>
             </div>
-            <button class="coin-pill" type="button"><span id="coins">320</span> 🪙</button>
-          </header>
-
-          <div class="role-switch" aria-label="Selecionar perfil">
-            <button class="active" data-role="student" type="button">Aluno</button>
-            <button data-role="parent" type="button">Pais</button>
-            <button data-role="teacher" type="button">Professor</button>
-            <button data-role="admin" type="button">Admin</button>
           </div>
+          <button id="logoutBtn" class="ghost" type="button">Sair</button>
+        </div>
+      </header>
 
+      <div class="role-switch" aria-label="Selecionar perfil">
+        <button class="active" data-role="student" type="button">Aluno</button>
+        <button data-role="parent" type="button">Pais</button>
+        <button data-role="teacher" type="button">Professor</button>
+        <button data-role="admin" type="button">Admin</button>
+      </div>
+
+      <div class="app-body">
+        <nav class="app-nav" aria-label="Navegação do app">
+          <button class="active" data-view="home" type="button">🏠<span>Início</span></button>
+          <button data-view="homework" type="button">📸<span>Dever</span></button>
+          <button data-view="study" type="button">🎯<span>Estudo</span></button>
+          <button data-view="contest" type="button">📚<span>Edital</span></button>
+          <button data-view="calendar" type="button">📅<span>Agenda</span></button>
+          <button data-view="library" type="button">🗂️<span>Conteúdo</span></button>
+          <button data-view="school" type="button">🏫<span>Escola</span></button>
+          <button data-view="week" type="button">🗓️<span>Semana</span></button>
+          <button data-view="dashboard" type="button">📈<span>Mapa</span></button>
+          <button data-view="parents" type="button">👪<span>Pais</span></button>
+          <button data-view="teacher" type="button">🧑‍🏫<span>Prof.</span></button>
+          <button data-view="admin" type="button">🛡️<span>Admin</span></button>
+        </nav>
+
+        <main class="app-content">
           <div class="screen">
             <section id="view-home" class="view active">
               <div class="welcome-bubble">
@@ -582,56 +563,39 @@
               </div>
             </section>
           </div>
+        </main>
 
-          <nav class="bottom-nav" aria-label="Navegação do app">
-            <button class="active" data-view="home" type="button">🏠<span>Início</span></button>
-            <button data-view="homework" type="button">📸<span>Dever</span></button>
-            <button data-view="study" type="button">🎯<span>Estudo</span></button>
-            <button data-view="contest" type="button">📚<span>Edital</span></button>
-            <button data-view="calendar" type="button">📅<span>Agenda</span></button>
-            <button data-view="library" type="button">🗂️<span>Conteúdo</span></button>
-            <button data-view="school" type="button">🏫<span>Escola</span></button>
-            <button data-view="week" type="button">🗓️<span>Semana</span></button>
-            <button data-view="dashboard" type="button">📈<span>Mapa</span></button>
-            <button data-view="parents" type="button">👪<span>Pais</span></button>
-            <button data-view="teacher" type="button">🧑‍🏫<span>Prof.</span></button>
-            <button data-view="admin" type="button">🛡️<span>Admin</span></button>
-          </nav>
-        </div>
-      </section>
-
-      <aside class="parent-panel">
-        <div class="panel-card">
-          <p class="kicker">Perfis conectados</p>
-          <h2>Casa + escola</h2>
-          <div class="parent-metrics">
-            <div><span>Aluno</span><strong>rotina</strong></div>
-            <div><span>Pais</span><strong>controle</strong></div>
-            <div><span>Professor</span><strong>turma</strong></div>
-            <div><span>Admin</span><strong>sistema</strong></div>
+        <aside class="app-rail">
+          <div class="panel-card">
+            <p class="kicker">Perfis conectados</p>
+            <h2>Casa + escola</h2>
+            <div class="parent-metrics">
+              <div><span>Aluno</span><strong>rotina</strong></div>
+              <div><span>Pais</span><strong>controle</strong></div>
+              <div><span>Professor</span><strong>turma</strong></div>
+              <div><span>Admin</span><strong>sistema</strong></div>
+            </div>
           </div>
-        </div>
 
-        <div class="panel-card note">
-          <p class="kicker">Insight da IA</p>
-          <p>
-            A Sofia está consistente, mas precisa de exemplos concretos para denominadores diferentes.
-            O ideal é revisar pouco, todos os dias.
-          </p>
-        </div>
+          <div class="panel-card note">
+            <p class="kicker">Insight da IA</p>
+            <p>
+              A Sofia está consistente, mas precisa de exemplos concretos para denominadores diferentes.
+              O ideal é revisar pouco, todos os dias.
+            </p>
+          </div>
 
-        <div class="panel-card">
-          <p class="kicker">Próximas provas</p>
-          <ul class="agenda">
-            <li><b>Matemática</b><span>Frações • 25/07</span></li>
-            <li><b>Ciências</b><span>Sistema Solar • 28/07</span></li>
-            <li><b>Português</b><span>Interpretação • 30/07</span></li>
-          </ul>
-        </div>
-      </aside>
-
-      <button id="logoutBtn" class="logout-button" type="button">Sair</button>
-    </main>
+          <div class="panel-card">
+            <p class="kicker">Próximas provas</p>
+            <ul class="agenda">
+              <li><b>Matemática</b><span>Frações • 25/07</span></li>
+              <li><b>Ciências</b><span>Sistema Solar • 28/07</span></li>
+              <li><b>Português</b><span>Interpretação • 30/07</span></li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script>

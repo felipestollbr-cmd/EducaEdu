@@ -284,7 +284,7 @@ function setView(name) {
   const target = $(`#view-${name}`);
   if (target) target.classList.add("active");
 
-  $$(".bottom-nav button").forEach((button) => {
+  $$(".app-nav button").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === name);
   });
 }
@@ -972,4 +972,12 @@ try {
   if (savedSession?.role) applySession(savedSession);
 } catch {
   localStorage.removeItem("educa7_session");
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // instalação como PWA fica indisponível, mas o app segue funcionando normalmente
+    });
+  });
 }
