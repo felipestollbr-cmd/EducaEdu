@@ -6,13 +6,6 @@ const student = {
   streak: 6
 };
 
-const demoUsers = {
-  student: { user: "sofia@educa7.ai", password: "aluno123", name: "Sofia", label: "Aluno • 7º ano" },
-  parent: { user: "pais@educa7.ai", password: "pais123", name: "Responsável", label: "Pais • acompanhamento" },
-  teacher: { user: "prof@educa7.ai", password: "prof123", name: "Professor", label: "Professor • turma 7º ano" },
-  admin: { user: "admin@educa7.ai", password: "admin123", name: "Admin", label: "Administrador • sistema" }
-};
-
 const allowedViews = {
   student: ["home", "homework", "study", "quiz", "dashboard", "school", "week", "calendar", "library", "contest"],
   parent: ["parents", "dashboard", "school", "week", "calendar"],
@@ -122,38 +115,7 @@ const contestTopics = [
   ["TI / Dados", 69, "revisar pontos fracos"]
 ];
 
-const contentLibrary = [
-  {
-    id: 1,
-    type: "school",
-    title: "Frações - 7º ano",
-    owner: "Escola",
-    format: "Slides + exercícios",
-    lessons: 4,
-    status: "pronto",
-    description: "Conteúdo visual para reforçar numerador, denominador, equivalência e soma."
-  },
-  {
-    id: 2,
-    type: "contest",
-    title: "DATAPREV - Previdenciário",
-    owner: "Felipe",
-    format: "PDF + questões",
-    lessons: 8,
-    status: "montando",
-    description: "Pacote de estudo para RGPS, benefícios, carência e qualidade de segurado."
-  },
-  {
-    id: 3,
-    type: "review",
-    title: "Português - Interpretação",
-    owner: "Família",
-    format: "Resumo + flashcards",
-    lessons: 5,
-    status: "pronto",
-    description: "Trilha reaproveitável para Sofia e para concurso, com níveis de dificuldade."
-  }
-];
+let contentLibrary = [];
 
 const samplePackage = {
   nome: "DATAPREV - Segurança Cibernética",
@@ -203,6 +165,9 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 let selectedHomeworkFile = null;
 let selectedSubject = "";
+let selectedMode = "correct";
+let selectedContestFile = null;
+let selectedTrack = "escola";
 let backendAvailable = false;
 let dailyStudyCache = [];
 const dailyStudyDone = new Set();
@@ -218,7 +183,7 @@ async function api(path, options = {}) {
 
 async function loadProgress() {
   try {
-    const progress = await api(`/progress?student=${encodeURIComponent(STUDENT_NAME)}`);
+    const progress = await api(`/progress?student=${encodeURIComponent(currentStudentName())}`);
     student.xp = progress.xp;
     student.coins = progress.coins;
     student.streak = progress.streak;
@@ -236,7 +201,7 @@ function awardProgress(xp = 0, coins = 0) {
   api("/progress/award", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ student: STUDENT_NAME, xp, coins })
+    body: JSON.stringify({ student: currentStudentName(), xp, coins })
   })
     .then((progress) => {
       // sincroniza com o valor oficial do servidor (cobre streak e corrige qualquer desvio)
@@ -305,22 +270,42 @@ function setRole(role) {
   if (role === "admin") setView("admin");
 }
 
+function buildSessionLabel(session) {
+  if (session.role === "student") {
+    const trackLabel = session.track === "concurso" ? "Concurso" : "Escola";
+    return session.school ? `Aluno • ${trackLabel} • ${session.school.name}` : `Aluno • ${trackLabel}`;
+  }
+  if (session.role === "parent") return "Pais • acompanhamento";
+  if (session.role === "teacher") return session.school ? `Professor • ${session.school.name}` : "Professor";
+  return "Administrador • sistema";
+}
+
+function landingViewFor(session) {
+  if (session.role === "student" && session.track === "concurso") return "contest";
+  return landingView[session.role] || "home";
+}
+
+function currentStudentName() {
+  return currentSession?.role === "student" ? currentSession.name : STUDENT_NAME;
+}
+
 function applySession(session) {
   currentSession = session;
   localStorage.setItem("educa7_session", JSON.stringify(session));
   $("#loginScreen").classList.add("hidden");
   $("#appProduct").classList.remove("locked");
   $("#sessionName").textContent = session.name;
-  $("#sessionRole").textContent = session.label;
+  $("#sessionRole").textContent = buildSessionLabel(session);
 
   $$("[data-role]").forEach((button) => {
     button.classList.toggle("active", button.dataset.role === session.role);
     button.disabled = session.role !== "admin" && button.dataset.role !== session.role;
   });
 
-  setView(landingView[session.role]);
+  setView(landingViewFor(session));
   updateSchoolPermissions();
-  toast(`Login realizado: ${session.label}.`);
+  loadProgress();
+  toast(`Bem-vindo(a), ${session.name}.`);
 }
 
 function logout() {
@@ -335,27 +320,104 @@ function logout() {
   });
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
-  const role = $("#loginRole").value;
-  const user = $("#loginUser").value.trim().toLowerCase();
+  const email = $("#loginEmail").value.trim();
   const password = $("#loginPassword").value;
-  const demo = demoUsers[role];
 
-  if (!demo || demo.user !== user || demo.password !== password) {
-    $("#loginError").textContent = "Usuário, senha ou perfil inválido para este MVP.";
+  try {
+    const session = await api("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    $("#loginError").textContent = "";
+    applySession(session);
+  } catch (error) {
+    $("#loginError").textContent = error.message || "Não foi possível entrar.";
+  }
+}
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const name = $("#registerName").value.trim();
+  const email = $("#registerEmail").value.trim();
+  const password = $("#registerPassword").value;
+  const role = $("#registerRole").value;
+  const schoolId = $("#registerSchool").value || null;
+
+  try {
+    const session = await api("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role,
+        track: role === "student" ? selectedTrack : undefined,
+        schoolId
+      })
+    });
+    $("#registerError").textContent = "";
+    applySession(session);
+  } catch (error) {
+    $("#registerError").textContent = error.message || "Não foi possível criar a conta.";
+  }
+}
+
+function setAuthTab(tab) {
+  $$("[data-auth-tab]").forEach((button) => button.classList.toggle("active", button.dataset.authTab === tab));
+  $("#auth-login").classList.toggle("active", tab === "login");
+  $("#auth-register").classList.toggle("active", tab === "register");
+}
+
+function updateRegisterFieldVisibility() {
+  const role = $("#registerRole").value;
+  $("#registerTrackField").classList.toggle("hidden", role !== "student");
+  $("#registerSchoolField").classList.toggle("hidden", role !== "student" && role !== "teacher");
+}
+
+async function loadSchoolsIntoSelect(selectId) {
+  try {
+    const schools = await api("/schools");
+    const select = $(selectId);
+    const current = select.value;
+    select.innerHTML = `<option value="">Selecionar...</option>${schools
+      .map((school) => `<option value="${school.id}">${school.name}${school.type === "cursinho" ? " (cursinho)" : ""}</option>`)
+      .join("")}`;
+    if (current) select.value = current;
+    return schools;
+  } catch {
+    return [];
+  }
+}
+
+async function createSchoolInline() {
+  const name = $("#newSchoolName").value.trim();
+  const type = $("#newSchoolType").value;
+  const city = $("#newSchoolCity").value.trim();
+
+  if (!name) {
+    toast("Informe o nome da escola ou cursinho.");
     return;
   }
 
-  $("#loginError").textContent = "";
-  applySession({ role, name: demo.name, label: demo.label, user: demo.user });
-}
-
-function fillDemo(role) {
-  const demo = demoUsers[role];
-  $("#loginRole").value = role;
-  $("#loginUser").value = demo.user;
-  $("#loginPassword").value = demo.password;
+  try {
+    const school = await api("/schools", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, type, city })
+    });
+    await loadSchoolsIntoSelect("#registerSchool");
+    $("#registerSchool").value = school.id;
+    $("#newSchoolForm").classList.add("hidden");
+    $("#newSchoolName").value = "";
+    $("#newSchoolCity").value = "";
+    toast(`"${school.name}" cadastrada.`);
+  } catch (error) {
+    toast(error.message || "Não foi possível cadastrar.");
+  }
 }
 
 function updateStats() {
@@ -406,6 +468,16 @@ function renderContest() {
   `).join("");
 }
 
+async function loadLibraryFromBackend() {
+  try {
+    contentLibrary = await api("/library/packages");
+  } catch {
+    // backend indisponível: a biblioteca fica vazia até o usuário importar um JSON localmente
+  }
+  renderLibrary($("#libraryFilter")?.value || "all");
+  await importPackageFromUrl();
+}
+
 function renderLibrary(filter = "all") {
   const items = filter === "all"
     ? contentLibrary
@@ -419,11 +491,47 @@ function renderLibrary(filter = "all") {
         <p>${item.description}</p>
         <small>${item.format} • ${item.lessons} lições • ${item.owner}</small>
       </div>
-      <button data-library-id="${item.id}" type="button">${item.status === "pronto" ? "Virar trilha" : "Completar"}</button>
+      <div class="library-actions">
+        <button data-library-id="${item.id}" type="button">${item.status === "pronto" ? "Virar trilha" : "Completar"}</button>
+        <button class="ghost" data-share-id="${item.id}" type="button">Compartilhar</button>
+      </div>
     </article>
   `).join("");
 
   $("#libraryCount").textContent = `${items.length} pacote${items.length === 1 ? "" : "s"}`;
+}
+
+async function shareLibraryItem(id) {
+  const item = contentLibrary.find((entry) => entry.id === Number(id));
+  if (!item) return;
+
+  const url = new URL(location.href);
+  url.search = `?pacote=${id}`;
+  const link = url.toString();
+
+  try {
+    await navigator.clipboard.writeText(link);
+    toast(`Link de "${item.title}" copiado.`);
+  } catch {
+    window.prompt("Copie o link da trilha:", link);
+  }
+}
+
+async function importPackageFromUrl() {
+  const packageId = new URLSearchParams(location.search).get("pacote");
+  if (!packageId) return;
+
+  try {
+    const item = await api(`/library/packages/${packageId}`);
+    if (!contentLibrary.some((entry) => entry.id === item.id)) {
+      contentLibrary.unshift(item);
+      renderLibrary($("#libraryFilter")?.value || "all");
+    }
+    activateLibraryItem(item.id);
+    toast(`Trilha "${item.title}" importada pelo link.`);
+  } catch {
+    toast("Não foi possível abrir a trilha desse link.");
+  }
 }
 
 function libraryTypeLabel(type) {
@@ -459,7 +567,7 @@ function importDemoPackage() {
   toast("Exemplo de pacote JSON carregado.");
 }
 
-function importLibraryPackage() {
+async function importLibraryPackage() {
   const raw = $("#libraryJsonInput").value.trim();
   if (!raw) {
     toast("Cole um pacote JSON antes de importar.");
@@ -474,7 +582,17 @@ function importLibraryPackage() {
     return;
   }
 
-  const item = normalizePackage(parsed);
+  let item;
+  try {
+    item = await api("/library/packages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed)
+    });
+  } catch {
+    item = normalizePackage(parsed);
+  }
+
   if (!item) {
     toast("Pacote sem nome ou módulos. Use o modelo sugerido.");
     return;
@@ -517,10 +635,49 @@ function normalizePackageType(type) {
   return "review";
 }
 
-function generateContestExam() {
-  const question = contestQuestions[Math.floor(Math.random() * contestQuestions.length)];
-  $("#contestExam").innerHTML = `
-    <p class="kicker">Simulado Gemini demonstrativo</p>
+async function uploadContestMaterial() {
+  const status = $("#contestUploadStatus");
+  const subject = $("#contestSubject").value.trim() || "DATAPREV";
+
+  if (!selectedContestFile) {
+    toast("Escolha um PDF antes de processar.");
+    return;
+  }
+
+  status.innerHTML = `<p class="kicker">Processando material...</p><p>Isso pode levar alguns segundos, dependendo do tamanho do PDF.</p>`;
+
+  try {
+    const formData = new FormData();
+    formData.append("file", selectedContestFile);
+    formData.append("subject", subject);
+    const result = await api("/contest/materials", { method: "POST", body: formData });
+    status.innerHTML = `
+      <p class="kicker">Material processado</p>
+      <p><b>${result.title}</b> vinculado a "${result.subject}" — ${result.chunkCount} trechos indexados.</p>
+      <p>Os próximos simulados dessa matéria já usam esse conteúdo.</p>
+    `;
+    toast("Material processado e vinculado ao concurso.");
+  } catch (error) {
+    status.innerHTML = `<p class="kicker">Não foi possível processar</p><p>${error.message}</p>`;
+  }
+}
+
+async function generateContestExam() {
+  const subject = $("#contestSubject").value.trim() || "DATAPREV";
+  const topic = $("#contestTopic").value.trim();
+  const box = $("#contestExam");
+  box.innerHTML = `<p class="kicker">Gerando simulado...</p>`;
+
+  let question;
+  try {
+    const params = new URLSearchParams({ subject, ...(topic ? { topic } : {}) });
+    question = await api(`/contest/exam?${params}`);
+  } catch {
+    question = contestQuestions[Math.floor(Math.random() * contestQuestions.length)];
+  }
+
+  box.innerHTML = `
+    <p class="kicker">Simulado ${subject}</p>
     <h3>Julgue o item: certo ou errado</h3>
     <p>${question.prompt}</p>
     <div class="contest-answer">
@@ -548,36 +705,58 @@ async function analyzeHomework() {
     if (!selectedHomeworkFile) throw new Error("no-file");
     const formData = new FormData();
     formData.append("photo", selectedHomeworkFile);
-    formData.append("student", STUDENT_NAME);
+    formData.append("student", currentStudentName());
+    formData.append("mode", selectedMode);
     if (selectedSubject) formData.append("subject", selectedSubject);
     analysis = await api("/homework/analyze", { method: "POST", body: formData });
   } catch (error) {
     // Sem foto selecionada ou backend indisponível: mantém a demonstração funcionando.
     await new Promise((resolve) => setTimeout(resolve, 1200));
-    analysis = {
-      subject: selectedSubject || "Matemática",
-      topic: "Frações",
-      correct_count: 7,
-      wrong_count: 3,
-      explanation_student: "Primeiro encontre um denominador comum. Depois some apenas os numeradores.",
-      explanation_parent: "Revise com exemplos de pizza, dinheiro e divisão de objetos."
-    };
+    analysis = selectedMode === "socratic"
+      ? {
+          mode: "socratic",
+          subject: selectedSubject || "Matemática",
+          topic: "Frações",
+          guiding_question: "Antes de somar, os dois denominadores são iguais? O que precisa acontecer para poder somar os numeradores direto?",
+          hint: "Pense em transformar as duas frações para que fiquem com o mesmo denominador."
+        }
+      : {
+          mode: "correct",
+          subject: selectedSubject || "Matemática",
+          topic: "Frações",
+          correct_count: 7,
+          wrong_count: 3,
+          explanation_student: "Primeiro encontre um denominador comum. Depois some apenas os numeradores.",
+          explanation_parent: "Revise com exemplos de pizza, dinheiro e divisão de objetos."
+        };
   }
 
   awardProgress(35, 12);
 
-  box.innerHTML = `
-    <p class="kicker">Correção pronta</p>
-    <h3>${analysis.subject || "Matéria"} — ${analysis.topic || "Revisão"}</h3>
-    <div class="result-grid">
-      <div><strong>${analysis.correct_count ?? "-"}</strong><span>acertos</span></div>
-      <div><strong>${analysis.wrong_count ?? "-"}</strong><span>erros</span></div>
-      <div><strong>+35</strong><span>XP</span></div>
-    </div>
-    <p><b>Para ${STUDENT_NAME}:</b> ${analysis.explanation_student || ""}</p>
-    <p><b>Para os pais:</b> ${analysis.explanation_parent || ""}</p>
-    ${analysis.matchedAgenda ? `<p class="meta">Bate com a agenda: ${analysis.matchedAgenda.title}.</p>` : ""}
-  `;
+  box.innerHTML = analysis.mode === "socratic" || analysis.guiding_question
+    ? `
+      <p class="kicker">Modo socrático</p>
+      <h3>${analysis.subject || "Matéria"} — ${analysis.topic || "Revisão"}</h3>
+      <div class="socratic-question">
+        <p class="kicker">Pergunta para ${currentStudentName()}</p>
+        <p>${analysis.guiding_question || ""}</p>
+      </div>
+      <p class="meta"><b>Dica se travar:</b> ${analysis.hint || ""}</p>
+      <p class="meta">+35 XP por tentar pensar antes de ver a resposta.</p>
+      ${analysis.matchedAgenda ? `<p class="meta">Bate com a agenda: ${analysis.matchedAgenda.title}.</p>` : ""}
+    `
+    : `
+      <p class="kicker">Correção pronta</p>
+      <h3>${analysis.subject || "Matéria"} — ${analysis.topic || "Revisão"}</h3>
+      <div class="result-grid">
+        <div><strong>${analysis.correct_count ?? "-"}</strong><span>acertos</span></div>
+        <div><strong>${analysis.wrong_count ?? "-"}</strong><span>erros</span></div>
+        <div><strong>+35</strong><span>XP</span></div>
+      </div>
+      <p><b>Para ${currentStudentName()}:</b> ${analysis.explanation_student || ""}</p>
+      <p><b>Para os pais:</b> ${analysis.explanation_parent || ""}</p>
+      ${analysis.matchedAgenda ? `<p class="meta">Bate com a agenda: ${analysis.matchedAgenda.title}.</p>` : ""}
+    `;
   toast("Dever analisado. +35 XP e +12 moedas.");
 }
 
@@ -902,10 +1081,27 @@ function bind() {
   });
 
   $("#loginForm").addEventListener("submit", handleLogin);
+  $("#registerForm").addEventListener("submit", handleRegister);
   $("#logoutBtn").addEventListener("click", logout);
-  $$("[data-demo-role]").forEach((button) => {
-    button.addEventListener("click", () => fillDemo(button.dataset.demoRole));
+
+  $$("[data-auth-tab]").forEach((button) => {
+    button.addEventListener("click", () => setAuthTab(button.dataset.authTab));
   });
+
+  $("#registerRole").addEventListener("change", updateRegisterFieldVisibility);
+
+  $$(".track-pill").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$(".track-pill").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      selectedTrack = button.dataset.track || "escola";
+    });
+  });
+
+  $("#toggleNewSchool").addEventListener("click", () => {
+    $("#newSchoolForm").classList.toggle("hidden");
+  });
+  $("#createSchoolBtn").addEventListener("click", createSchoolInline);
 
   $("#themeToggle").addEventListener("click", () => {
     document.body.classList.toggle("dark");
@@ -917,11 +1113,26 @@ function bind() {
     $("#fileLabel").textContent = file ? file.name : "Enviar foto ou PDF";
   });
 
+  $("#contestMaterialFile").addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    selectedContestFile = file || null;
+    $("#contestFileLabel").textContent = file ? file.name : "Enviar edital ou material de estudo (PDF)";
+  });
+  $("#contestUploadBtn").addEventListener("click", uploadContestMaterial);
+
   $$(".subject-pill").forEach((button) => {
     button.addEventListener("click", () => {
       $$(".subject-pill").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
       selectedSubject = button.dataset.subject || "";
+    });
+  });
+
+  $$(".mode-pill").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$(".mode-pill").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      selectedMode = button.dataset.mode || "correct";
     });
   });
 
@@ -935,6 +1146,8 @@ function bind() {
   $("#librarySampleBtn").addEventListener("click", importDemoPackage);
   $("#libraryImportBtn").addEventListener("click", importLibraryPackage);
   $("#libraryItems").addEventListener("click", (event) => {
+    const shareButton = event.target.closest("[data-share-id]");
+    if (shareButton) return shareLibraryItem(shareButton.dataset.shareId);
     const button = event.target.closest("[data-library-id]");
     if (button) activateLibraryItem(button.dataset.libraryId);
   });
@@ -966,6 +1179,9 @@ bind();
 loadSchoolDataFromBackend();
 loadDailyStudy();
 loadProgress();
+loadLibraryFromBackend();
+loadSchoolsIntoSelect("#registerSchool");
+updateRegisterFieldVisibility();
 
 try {
   const savedSession = JSON.parse(localStorage.getItem("educa7_session"));

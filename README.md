@@ -6,14 +6,24 @@ preparação para concursos, com backend real (Gemini + RAG) e frontend instalá
 
 ## Recursos atuais
 
-- Login demonstrativo por perfil: aluno, pais, professor e administrador.
+- **Contas reais**: cadastro e login com e-mail/senha (senha com hash `scrypt`, sem
+  depender de credenciais fixas). Perfis: aluno, pais, professor e administrador.
+- **Aluno escolhe a trilha no cadastro**: Escola (rotina e dever de casa) ou Concurso
+  (edital, simulados, estudo por conta própria) — isso já define a tela inicial.
+- **Escolas e cursinhos cadastráveis**: aluno e professor podem vincular a conta a uma
+  escola/cursinho existente ou cadastrar um novo direto no formulário de conta.
 - Envio de dever de casa com análise por IA (Gemini Vision + RAG sobre o material didático real).
+- **Modo socrático** no dever de casa: em vez de corrigir e dar a resposta, a IA devolve uma
+  pergunta-guia (+ dica) para a criança pensar sozinha, alternando com o modo "corrigir e explicar".
 - Estudo do dia com flashcards e quiz gerados a partir da agenda escolar.
 - XP, moedas e streak persistidos no backend.
 - Calendário inteligente com blocos escolares, revisão espaçada e concurso.
-- Biblioteca de conteúdos para organizar slides, PDFs e pacotes JSON.
+- Biblioteca de conteúdos persistida no backend, com pacotes JSON e **compartilhamento por
+  link** (`?pacote=<id>`) que importa a trilha automaticamente para quem abre o link.
 - Quiz interativo.
-- Módulo Concurso/DATAPREV com trilha, prioridades do edital e simulado demonstrativo com Gemini.
+- Módulo Concurso com trilha, prioridades do edital e simulado real via Gemini (RAG) para
+  **qualquer concurso ou matéria**, não só DATAPREV — o campo é livre. Dá para **subir o
+  edital ou material de estudo em PDF** direto na tela, que vira base real dos simulados.
 - Módulo Escola com agenda, matérias lecionadas e boletim.
 - Simulação semanal da Sofia com visão do professor, aluno e pais.
 - Painel dos pais.
@@ -60,12 +70,23 @@ Isso quebra o PDF em trechos, gera embeddings e salva no banco local. A partir d
 relevantes do livro para embasar a explicação — a criança recebe uma explicação
 fiel ao material que ela usa em sala, não uma resposta genérica.
 
-## Credenciais de demonstração
+## Contas, trilhas e escolas
 
-- Aluno: `sofia@educa7.ai` / `aluno123`
-- Pais: `pais@educa7.ai` / `pais123`
-- Professor: `prof@educa7.ai` / `prof123`
-- Admin: `admin@educa7.ai` / `admin123`
+Não existe mais login demo — a tela inicial tem abas "Entrar" / "Criar conta". Ao criar
+conta:
+
+- **Nome, e-mail e senha** (mínimo 6 caracteres) são obrigatórios.
+- **Perfil**: aluno, pais, professor ou administrador.
+- **Aluno** escolhe a trilha — **Escola** ou **Concurso** — o que já define a tela para
+  onde ele cai ao entrar (Início ou Concurso).
+- **Aluno e professor** podem vincular a conta a uma escola/cursinho: selecionar uma já
+  cadastrada ou cadastrar uma nova (nome, tipo — escola ou cursinho — e cidade) sem sair
+  do formulário.
+
+⚠️ Limitação atual: a sessão é o próprio objeto retornado pelo login/cadastro, guardado no
+`localStorage` do navegador — não há token assinado nem expiração. Suficiente para uso
+familiar/local, mas antes de expor a instância publicamente vale adicionar um mecanismo de
+sessão de verdade (JWT ou cookie assinado).
 
 ## Arquitetura atual do backend
 
@@ -75,13 +96,20 @@ backend/
     server.js          # Express: serve o frontend estático + monta as rotas da API
     db.js               # node:sqlite — schema e seed (substitui os mocks do app.js)
     routes/
-      homework.js        # POST /api/homework/analyze (foto -> Gemini Vision -> RAG -> correção)
-      school.js           # CRUD de agenda, matérias lecionadas e boletim
-      study.js             # GET /api/study/daily (agenda + RAG -> flashcards e quiz do dia)
+      auth.js            # POST /api/auth/register e /api/auth/login (senha com hash scrypt)
+      schools.js           # GET/POST /api/schools — cadastro de escolas e cursinhos
+      homework.js            # POST /api/homework/analyze (foto -> Gemini Vision -> RAG -> correção ou pergunta socrática)
+      school.js                # CRUD de agenda, matérias lecionadas e boletim (ainda não filtrado por escola/turma)
+      study.js                   # GET /api/study/daily (agenda + RAG -> flashcards e quiz do dia)
+      contest.js                   # GET /api/contest/exam + POST /api/contest/materials (upload de edital/PDF -> RAG)
+      library.js                     # CRUD de pacotes de conteúdo (Biblioteca), base do compartilhamento por link
+      progress.js                     # XP, moedas e streak por aluno
     services/
       gemini.js           # cliente Gemini + embeddings + parsing de JSON da resposta
-      rag.js               # busca por similaridade nos trechos do livro didático
-      ingestBook.js         # script CLI: PDF do livro -> chunks -> embeddings -> SQLite
+      password.js           # hash/verificação de senha (node:crypto scrypt, sem dependência extra)
+      rag.js                  # busca por similaridade nos trechos do livro/edital
+      ingest.js                 # PDF -> chunks -> embeddings -> SQLite (usado pelo CLI e pelo upload web)
+      ingestBook.js               # script CLI que chama ingest.js
 ```
 
 O frontend (`app.js`) já está ligado a essas rotas: se o backend não estiver no ar,
@@ -90,11 +118,12 @@ desenvolvimento.
 
 ## Próximos passos técnicos
 
-- Autenticação real (hoje o login ainda é uma lista fixa de credenciais demo).
+- Sessão de verdade (JWT/cookie assinado) no lugar do objeto de sessão cru no `localStorage`.
+- Isolar dados por conta/escola: hoje agenda, boletim e progresso não são filtrados por `school_id` — todo mundo vê a mesma agenda global.
 - Correlacionar automaticamente o dever enviado com o item da agenda daquele dia (comparação por matéria já existe; falta por conteúdo/tópico).
-- Conversor de material/edital em pacote JSON genérico (hoje o pacote é montado manualmente; a ideia é generalizar de DATAPREV para qualquer concurso).
+- Conversor de material/edital em pacote JSON automaticamente para a Biblioteca (hoje o upload de PDF já alimenta o RAG do simulado, mas não vira pacote/trilha sozinho).
 - Repetição espaçada, badges e loja de recompensas.
-- Multi-tenant (uma instância por família/escola) para virar SaaS.
+- Multi-tenant (uma instância por família/escola) para virar SaaS — a base de `schools` já existe, falta isolar os dados por ela.
 - Preparar deploy em AWS ou alternativa equivalente (ver observações de segurança da conta AWS usada nos testes).
 
 ## PWA e responsividade

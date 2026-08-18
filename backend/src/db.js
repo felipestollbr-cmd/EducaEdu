@@ -36,12 +36,28 @@ db.exec(`
     subject TEXT,
     image_path TEXT,
     transcribed_text TEXT,
+    mode TEXT NOT NULL DEFAULT 'correct',
     correct_count INTEGER,
     wrong_count INTEGER,
     explanation_student TEXT,
     explanation_parent TEXT,
+    guiding_question TEXT,
+    hint TEXT,
     matched_agenda_id INTEGER,
     source TEXT NOT NULL DEFAULT 'mock',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS content_packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'review',
+    owner TEXT,
+    format TEXT,
+    lessons INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'montando',
+    description TEXT,
+    raw_json TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -61,7 +77,36 @@ db.exec(`
     content TEXT NOT NULL,
     embedding TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS schools (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'escola',
+    city TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    track TEXT,
+    school_id INTEGER REFERENCES schools(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
+
+function addColumnIfMissing(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (columns.some((col) => col.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+addColumnIfMissing("homework_submissions", "mode", "TEXT NOT NULL DEFAULT 'correct'");
+addColumnIfMissing("homework_submissions", "guiding_question", "TEXT");
+addColumnIfMissing("homework_submissions", "hint", "TEXT");
 
 function seedIfEmpty(table, rows, insertSql) {
   const { count } = db.prepare(`SELECT COUNT(*) as count FROM ${table}`).get();
@@ -104,4 +149,41 @@ seedIfEmpty(
     ["Ciências", "Trabalho", 8.0]
   ],
   "INSERT INTO grades (subject, type, value) VALUES (?, ?, ?)"
+);
+
+seedIfEmpty(
+  "content_packages",
+  [
+    [
+      "Frações - 7º ano",
+      "school",
+      "Escola",
+      "Slides + exercícios",
+      4,
+      "pronto",
+      "Conteúdo visual para reforçar numerador, denominador, equivalência e soma.",
+      JSON.stringify({ nome: "Frações - 7º ano", tipo: "school", dono: "Escola", formato: "Slides + exercícios", modulos: [{ nome: "Frações", licoes: ["Numerador e denominador", "Equivalência", "Soma"] }] })
+    ],
+    [
+      "DATAPREV - Previdenciário",
+      "contest",
+      "Felipe",
+      "PDF + questões",
+      8,
+      "montando",
+      "Pacote de estudo para RGPS, benefícios, carência e qualidade de segurado.",
+      JSON.stringify({ nome: "DATAPREV - Previdenciário", tipo: "contest", dono: "Felipe", formato: "PDF + questões", modulos: [{ nome: "RGPS", licoes: ["Qualidade de segurado", "Carência", "Benefícios"] }] })
+    ],
+    [
+      "Português - Interpretação",
+      "review",
+      "Família",
+      "Resumo + flashcards",
+      5,
+      "pronto",
+      "Trilha reaproveitável para Sofia e para concurso, com níveis de dificuldade.",
+      JSON.stringify({ nome: "Português - Interpretação", tipo: "review", dono: "Família", formato: "Resumo + flashcards", modulos: [{ nome: "Interpretação", licoes: ["Ideia principal", "Palavras-chave", "Inferência"] }] })
+    ]
+  ],
+  "INSERT INTO content_packages (title, type, owner, format, lessons, status, description, raw_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 );

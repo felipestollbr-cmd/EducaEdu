@@ -27,6 +27,7 @@ export const homeworkRouter = Router();
 
 homeworkRouter.post("/analyze", upload.single("photo"), async (req, res) => {
   const { student = "Sofia", subject } = req.body;
+  const mode = req.body.mode === "socratic" ? "socratic" : "correct";
 
   if (!req.file) {
     return res.status(400).json({ error: "Envie uma foto do dever no campo 'photo'." });
@@ -34,31 +35,35 @@ homeworkRouter.post("/analyze", upload.single("photo"), async (req, res) => {
 
   try {
     const analysis = geminiEnabled
-      ? await analyzeWithGemini(req.file.path, subject)
-      : mockAnalysis(subject);
+      ? await analyzeWithGemini(req.file.path, subject, mode)
+      : mockAnalysis(subject, mode);
 
     const matchedAgenda = findAgendaMatchForToday(analysis.subject || subject);
 
     const insert = db.prepare(`
       INSERT INTO homework_submissions
-        (student, subject, image_path, transcribed_text, correct_count, wrong_count, explanation_student, explanation_parent, matched_agenda_id, source)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (student, subject, image_path, transcribed_text, mode, correct_count, wrong_count, explanation_student, explanation_parent, guiding_question, hint, matched_agenda_id, source)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = insert.run(
       student,
       analysis.subject || subject || null,
       req.file.path,
       analysis.transcribed_text || null,
+      mode,
       analysis.correct_count ?? null,
       analysis.wrong_count ?? null,
       analysis.explanation_student || null,
       analysis.explanation_parent || null,
+      analysis.guiding_question || null,
+      analysis.hint || null,
       matchedAgenda?.id ?? null,
       geminiEnabled ? "gemini" : "mock"
     );
 
     res.json({
       id: result.lastInsertRowid,
+      mode,
       matchedAgenda: matchedAgenda || null,
       ...analysis
     });
@@ -76,7 +81,7 @@ homeworkRouter.get("/history", (req, res) => {
   res.json(rows);
 });
 
-async function analyzeWithGemini(imagePath, subjectHint) {
+async function analyzeWithGemini(imagePath, subjectHint, mode) {
   const model = getVisionModel();
   const imageBase64 = fs.readFileSync(imagePath).toString("base64");
   const mimeType = imagePath.endsWith(".png") ? "image/png" : "image/jpeg";
@@ -96,7 +101,16 @@ Responda em JSON: {"transcribed_text": "...", "subject": "...", "topic": "..."}`
   const contextChunks = await retrieveContext(`${subject} ${triage.topic || ""}`, { subject });
   const context = formatContextForPrompt(contextChunks);
 
-  const gradingPrompt = `Você é um tutor particular gentil e didático para uma criança do ensino fundamental.
+  const gradingResult = await model.generateContent(
+    mode === "socratic"
+      ? buildSocraticPrompt(context, triage)
+      : buildCorrectionPrompt(context, triage)
+  );
+  return extractJson(gradingResult.response.text());
+}
+
+function buildCorrectionPrompt(context, triage) {
+  return `Você é um tutor particular gentil e didático para uma criança do ensino fundamental.
 Material didático de referência (use isso para embasar sua correção e explicação, citando o mesmo vocabulário do livro quando possível):
 ---
 ${context}
@@ -117,12 +131,42 @@ Corrija o dever com base no material de referência. Responda SOMENTE em JSON co
   "explanation_student": "explicação simples e encorajadora para a criança, em 2-3 frases, sobre onde errou e como corrigir",
   "explanation_parent": "resumo objetivo para o responsável: o que foi bem, o que precisa de reforço, e uma sugestão prática de 10-15 min para ajudar"
 }`;
-
-  const gradingResult = await model.generateContent(gradingPrompt);
-  return extractJson(gradingResult.response.text());
 }
 
-function mockAnalysis(subject) {
+function buildSocraticPrompt(context, triage) {
+  return `Você é um tutor socrático para uma criança do ensino fundamental: em vez de entregar a resposta
+pronta, você guia o raciocínio dela com uma pergunta bem escolhida, para que ela mesma chegue à explicação.
+
+Material didático de referência (use o mesmo vocabulário do livro quando possível):
+---
+${context}
+---
+
+Dever de casa transcrito da foto:
+---
+${triage.transcribed_text}
+---
+
+NÃO corrija nem dê a resposta certa diretamente. Em vez disso, responda SOMENTE em JSON com este formato exato:
+{
+  "subject": "matéria identificada",
+  "topic": "tópico específico",
+  "transcribed_text": "transcrição do dever",
+  "guiding_question": "uma pergunta curta e concreta que ajude a criança a perceber sozinha onde revisar o raciocínio, sem entregar a resposta",
+  "hint": "uma dica sutil (1 frase) para o caso de ela travar na pergunta, ainda sem dar a resposta final"
+}`;
+}
+
+function mockAnalysis(subject, mode) {
+  if (mode === "socratic") {
+    return {
+      subject: subject || "Matemática",
+      topic: "Frações",
+      transcribed_text: "(modo demonstração — configure GEMINI_API_KEY para análise real)",
+      guiding_question: "Antes de somar, os dois denominadores são iguais? O que precisa acontecer para poder somar os numeradores direto?",
+      hint: "Pense em transformar as duas frações para que fiquem com o mesmo denominador."
+    };
+  }
   return {
     subject: subject || "Matemática",
     topic: "Frações",

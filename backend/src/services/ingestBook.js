@@ -4,24 +4,8 @@
 
 import "dotenv/config";
 import fs from "node:fs";
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
-import { db } from "../db.js";
-import { embedText, geminiEnabled } from "./gemini.js";
-
-const CHUNK_SIZE = 1200;
-const CHUNK_OVERLAP = 150;
-
-function chunkText(text) {
-  const clean = text.replace(/\s+/g, " ").trim();
-  const chunks = [];
-  let start = 0;
-  while (start < clean.length) {
-    const end = Math.min(start + CHUNK_SIZE, clean.length);
-    chunks.push(clean.slice(start, end));
-    start += CHUNK_SIZE - CHUNK_OVERLAP;
-  }
-  return chunks;
-}
+import { geminiEnabled } from "./gemini.js";
+import { ingestPdfBuffer } from "./ingest.js";
 
 async function main() {
   const [, , filePath, bookName, subject] = process.argv;
@@ -37,24 +21,13 @@ async function main() {
   }
 
   const buffer = fs.readFileSync(filePath);
-  const parsed = await pdfParse(buffer);
-  const chunks = chunkText(parsed.text);
+  console.log(`Livro "${bookName}": extraindo texto e gerando embeddings...`);
 
-  console.log(`Livro "${bookName}": ${chunks.length} trechos extraídos. Gerando embeddings...`);
+  const { chunkCount } = await ingestPdfBuffer(buffer, bookName, subject, (done, total) => {
+    if (done % 10 === 0 || done === total) console.log(`  ${done}/${total} trechos processados`);
+  });
 
-  const insert = db.prepare(
-    "INSERT INTO book_chunks (book, subject, source_page, content, embedding) VALUES (?, ?, ?, ?, ?)"
-  );
-
-  for (let i = 0; i < chunks.length; i++) {
-    const embedding = await embedText(chunks[i]);
-    insert.run(bookName, subject || null, null, chunks[i], JSON.stringify(embedding));
-    if ((i + 1) % 10 === 0 || i === chunks.length - 1) {
-      console.log(`  ${i + 1}/${chunks.length} trechos processados`);
-    }
-  }
-
-  console.log("Ingestão concluída.");
+  console.log(`Ingestão concluída: ${chunkCount} trechos.`);
 }
 
 main().catch((error) => {

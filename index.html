@@ -43,41 +43,93 @@
       </div>
 
       <div class="login-card">
-        <p class="kicker">Acesso protegido</p>
-        <h2>Entrar na plataforma</h2>
-        <p class="login-copy">
-          No MVP o login é demonstrativo. Futuramente, esta camada pode ser conectada ao AWS Cognito,
-          banco de usuários e permissões reais.
-        </p>
+        <div class="auth-tabs" role="tablist" aria-label="Acesso">
+          <button class="active" data-auth-tab="login" type="button">Entrar</button>
+          <button data-auth-tab="register" type="button">Criar conta</button>
+        </div>
 
-        <form id="loginForm" class="login-form">
-          <label>
-            Perfil
-            <select id="loginRole">
-              <option value="student">Aluno</option>
-              <option value="parent">Pais</option>
-              <option value="teacher">Professor</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </label>
-          <label>
-            Usuário ou e-mail
-            <input id="loginUser" type="text" autocomplete="username" placeholder="sofia@educa7.ai" required />
-          </label>
-          <label>
-            Senha
-            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha" required />
-          </label>
-          <button class="big-action" type="submit">Entrar</button>
-        </form>
+        <div id="auth-login" class="auth-panel active">
+          <p class="kicker">Acesso à sua conta</p>
+          <h2>Entrar na plataforma</h2>
 
-        <div id="loginError" class="login-error" role="alert"></div>
+          <form id="loginForm" class="login-form">
+            <label>
+              E-mail
+              <input id="loginEmail" type="email" autocomplete="username" placeholder="voce@email.com" required />
+            </label>
+            <label>
+              Senha
+              <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Digite sua senha" required />
+            </label>
+            <button class="big-action" type="submit">Entrar</button>
+          </form>
+          <div id="loginError" class="login-error" role="alert"></div>
+        </div>
 
-        <div class="demo-users">
-          <button data-demo-role="student" type="button"><b>Aluno</b><span>sofia@educa7.ai / aluno123</span></button>
-          <button data-demo-role="parent" type="button"><b>Pais</b><span>pais@educa7.ai / pais123</span></button>
-          <button data-demo-role="teacher" type="button"><b>Professor</b><span>prof@educa7.ai / prof123</span></button>
-          <button data-demo-role="admin" type="button"><b>Admin</b><span>admin@educa7.ai / admin123</span></button>
+        <div id="auth-register" class="auth-panel">
+          <p class="kicker">Nova conta</p>
+          <h2>Criar sua conta</h2>
+
+          <form id="registerForm" class="login-form">
+            <label>
+              Nome
+              <input id="registerName" type="text" autocomplete="name" placeholder="Seu nome" required />
+            </label>
+            <label>
+              E-mail
+              <input id="registerEmail" type="email" autocomplete="username" placeholder="voce@email.com" required />
+            </label>
+            <label>
+              Senha
+              <input id="registerPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" required minlength="6" />
+            </label>
+            <label>
+              Perfil
+              <select id="registerRole">
+                <option value="student">Aluno</option>
+                <option value="parent">Pais</option>
+                <option value="teacher">Professor</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </label>
+
+            <div id="registerTrackField" class="track-row">
+              <span>Você estuda para...</span>
+              <div class="mode-row">
+                <button class="track-pill active" type="button" data-track="escola">
+                  <b>Escola</b>
+                  <small>rotina escolar, dever de casa</small>
+                </button>
+                <button class="track-pill" type="button" data-track="concurso">
+                  <b>Concurso</b>
+                  <small>edital, simulados e estudo por conta própria</small>
+                </button>
+              </div>
+            </div>
+
+            <div id="registerSchoolField" class="school-field">
+              <label>
+                Escola ou cursinho (opcional)
+                <select id="registerSchool">
+                  <option value="">Selecionar...</option>
+                </select>
+              </label>
+              <button id="toggleNewSchool" class="ghost" type="button">+ Cadastrar escola/cursinho</button>
+
+              <div id="newSchoolForm" class="new-school-form hidden">
+                <input id="newSchoolName" type="text" placeholder="Nome da escola/cursinho" />
+                <select id="newSchoolType">
+                  <option value="escola">Escola</option>
+                  <option value="cursinho">Cursinho</option>
+                </select>
+                <input id="newSchoolCity" type="text" placeholder="Cidade (opcional)" />
+                <button id="createSchoolBtn" type="button">Cadastrar</button>
+              </div>
+            </div>
+
+            <button class="big-action" type="submit">Criar conta</button>
+          </form>
+          <div id="registerError" class="login-error" role="alert"></div>
         </div>
       </div>
     </section>
@@ -343,6 +395,17 @@
                 <button class="subject-pill" type="button" data-subject="Ciências">Ciên</button>
               </div>
 
+              <div class="mode-row" aria-label="Escolher modo de ajuda">
+                <button class="mode-pill active" type="button" data-mode="correct">
+                  <b>Corrigir e explicar</b>
+                  <small>a IA mostra o que está certo, errado e por quê</small>
+                </button>
+                <button class="mode-pill" type="button" data-mode="socratic">
+                  <b>Me ajuda a pensar</b>
+                  <small>a IA faz uma pergunta pra Sofia chegar sozinha na resposta</small>
+                </button>
+              </div>
+
               <button id="analyzeBtn" class="big-action" type="button">Analisar com Tutor Educa7</button>
               <div id="analysisBox" class="analysis-box">
                 <p>O resultado aparecerá aqui com status do dever, acertos, erros e recomendação para os pais.</p>
@@ -372,7 +435,7 @@
             <section id="view-contest" class="view">
               <div class="screen-title">
                 <p class="kicker">Trilha pessoal</p>
-                <h2>DATAPREV sem bagunçar o estudo escolar.</h2>
+                <h2>Concurso sem bagunçar o estudo escolar.</h2>
               </div>
 
               <div class="contest-hero">
@@ -394,6 +457,22 @@
                 <h2>Prioridade por assunto.</h2>
               </div>
               <div id="contestTopics" class="contest-topics"></div>
+
+              <div class="contest-exam-form">
+                <input id="contestSubject" type="text" placeholder="Concurso ou matéria" value="DATAPREV" />
+                <input id="contestTopic" type="text" placeholder="Tópico (opcional)" />
+              </div>
+
+              <label class="camera-card">
+                <input id="contestMaterialFile" type="file" accept="application/pdf" />
+                <div class="camera-lens"></div>
+                <strong id="contestFileLabel">Enviar edital ou material de estudo (PDF)</strong>
+                <span>vira base real para os simulados dessa matéria</span>
+              </label>
+              <button id="contestUploadBtn" class="big-action" type="button">Processar material</button>
+              <div id="contestUploadStatus" class="analysis-box">
+                <p>Envie o edital ou uma apostila em PDF para os simulados usarem esse conteúdo, em vez de conhecimento genérico.</p>
+              </div>
 
               <button id="contestExamBtn" class="big-action" type="button">Gerar simulado com Gemini</button>
               <div id="contestExam" class="contest-exam">
